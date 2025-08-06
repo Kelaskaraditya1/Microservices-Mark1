@@ -13,4 +13,5 @@ public interface RatingsFeignClient {
 
     @GetMapping("/ratings/get-ratings-userId/{userId}")
     public List<Ratings> getRatings(@PathVariable("userId") String userId);
+
 }

@@ -51,110 +51,6 @@ public class UserService {
 //    @Cacheable(key = "#userId", value = "user")
     public User getUser(String userId) {
 
-//        // Making first Api call for getting ratings.
-//
-//        List<Ratings> ratingsList = new ArrayList<>();
-//
-//        try {
-//            // Construct URL with userId
-//            log.info("Calling Ratings Service with URL: {}", Keys.USER_RATINGS_URL);
-//
-//            ResponseEntity<List<Ratings>> ratingResponse = this.restTemplate.exchange(
-//                    Keys.USER_RATINGS_URL,
-//                    HttpMethod.GET,
-//                    null,
-//                    new ParameterizedTypeReference<List<Ratings>>() {},
-//                    userId
-//            );
-//
-//            // Making 2nd Api call , for getting hotel
-//
-//            Hotel hotel = null;
-//
-//            try{
-//                ResponseEntity<Hotel> hotelResponseEntity = this.restTemplate.exchange(
-//                        Keys.HOTEL_URL
-//                        , HttpMethod.GET
-//                        , null
-//                        , new ParameterizedTypeReference<Hotel>() {}
-//                );
-//
-//                hotel = hotelResponseEntity.getBody();
-//
-//            }catch (Exception e){
-//                e.printStackTrace();
-//                log.info(e.getLocalizedMessage());
-//            }
-//
-//            ratingsList = ratingResponse.getBody();
-//            Hotel finalHotel = hotel;
-//            ratingsList.stream()
-//                    .map(ratings -> {
-//                        ratings.setHotel(finalHotel);
-//                        return finalHotel;
-//                    });
-//            log.info("Fetched Ratings List: {}", ratingsList);
-//        } catch (Exception e) {
-//            log.error("Failed to fetch ratings from Ratings Service for userId: {}", userId, e);
-//        }
-
-//<------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------>
-
-
-//        try{
-//
-//            ResponseEntity<List<Ratings>> ratingsListResponse = this.restTemplate
-//                    .exchange(
-//                            Keys.USER_RATINGS_URL,
-//                            HttpMethod.GET,
-//                            null,
-//                            new ParameterizedTypeReference<List<Ratings>>() {},
-//                            userId
-//                    );
-//
-//            ratingsList= ratingsListResponse.getBody();
-//
-//
-//        }catch (Exception e){
-//            e.printStackTrace();
-//            log.info(e.getLocalizedMessage());
-//        }
-//
-//        if (this.userRepository.existsById(userId)) {
-//            User user = this.userRepository.findById(userId).get();
-//
-//            try{
-//
-//                ResponseEntity<Hotel> hotelResponseEntity = this.restTemplate
-//                        .exchange(
-//                                Keys.HOTEL_URL,
-//                                HttpMethod.GET,
-//                                null,
-//                                new ParameterizedTypeReference<Hotel>() {}
-//                        );
-//
-//                Hotel hotel = hotelResponseEntity.getBody();
-//
-//                log.info("hotel object: {}",hotel);
-//
-//                ratingsList.stream()
-//                        .forEach(ratings->
-//                                ratings.setHotel(hotel));
-//
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                log.debug(e.getLocalizedMessage());
-//            }
-//            user.setRatingsList(ratingsList);
-//            log.info("Returning user with ratings: {}", user);
-//            return user;
-//        } else {
-//            log.warn("User not found in database for userId: {}", userId);
-//            return null;
-//        }
-
-        //<------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------>
-
         if(this.userRepository.existsById(userId)){
 
 
@@ -164,46 +60,46 @@ public class UserService {
 
             // Using RestTemplate: Api-Call
 
-//            ResponseEntity<List<Ratings>> ratingsListResponse = this.restTemplate
-//                    .exchange(
-//                            Keys.USER_RATINGS_URL,
-//                            HttpMethod.GET,
-//                            null,
-//                            new ParameterizedTypeReference<List<Ratings>>() {},
-//                            userId
-//                    );
-//
-//            if(ratingsListResponse.getBody()!=null && !ratingsListResponse.getBody().isEmpty())
-//                    ratingsList=ratingsListResponse.getBody();
-//
-//            ratingsList.stream()
-//                            .forEach(ratings -> {
-//
-//                                String hotelId = ratings.getHotelId();
-//
-//                                ResponseEntity<Hotel> hotelResponseEntity = this.restTemplate.exchange(
-//                                        Keys.HOTEL_URL,
-//                                        HttpMethod.GET,
-//                                        null,
-//                                        new ParameterizedTypeReference<Hotel>() {}
-//                                        ,hotelId
-//                                );
-//
-//                                if(hotelResponseEntity.getBody()!=null)
-//                                        ratings.setHotel(hotelResponseEntity.getBody());
-//                            });
-//
-//            user.setRatingsList(ratingsList);
+            ResponseEntity<List<Ratings>> ratingsListResponse = this.restTemplate
+                    .exchange(
+                            Keys.USER_RATINGS_URL,
+                            HttpMethod.GET,
+                            null,
+                            new ParameterizedTypeReference<List<Ratings>>() {},
+                            userId
+                    );
+
+            if(ratingsListResponse.getBody()!=null && !ratingsListResponse.getBody().isEmpty())
+                    ratingsList=ratingsListResponse.getBody();
+
+            ratingsList.stream()
+                            .forEach(ratings -> {
+
+                                String hotelId = ratings.getHotelId();
+
+                                ResponseEntity<Hotel> hotelResponseEntity = this.restTemplate.exchange(
+                                        Keys.HOTEL_URL,
+                                        HttpMethod.GET,
+                                        null,
+                                        new ParameterizedTypeReference<Hotel>() {}
+                                        ,hotelId
+                                );
+
+                                if(hotelResponseEntity.getBody()!=null)
+                                        ratings.setHotel(hotelResponseEntity.getBody());
+                            });
+
+
 
             // Using Feign client
 
-            ratingsList = this.ratingsFeignClient.getRatings(userId);
-
-            for(Ratings rating:ratingsList){
-
-                Hotel hotel = this.hotelFeignClient.getHotelById(rating.getHotelId());
-                rating.setHotel(hotel);
-            }
+//            ratingsList = this.ratingsFeignClient.getRatings(userId);
+//
+//            for(Ratings rating:ratingsList){
+//
+//                Hotel hotel = this.hotelFeignClient.getHotelById(rating.getHotelId());
+//                rating.setHotel(hotel);
+//            }
 
             user.setRatingsList(ratingsList);
 
@@ -216,10 +112,53 @@ public class UserService {
     }
 
 
-    @Cacheable(value = "allUsers")
+//    @Cacheable(value = "allUsers")
     public List<User> getUsers(){
 
-        return this.userRepository.findAll();
+        List<User> userList = this.userRepository.findAll();
+
+        userList.stream().forEach(user->{
+
+            // Api call for getting list of ratings, given by the user
+
+            var ratingsResponse = this.restTemplate.exchange(
+                    Keys.USER_RATINGS_URL,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<List<Ratings>>() {}
+                    ,user.getUserId()
+            );
+
+            List<Ratings> ratingsList=null;
+
+            if(ratingsResponse.getBody()!=null){
+                ratingsList = new ArrayList<>(ratingsResponse.getBody());
+                user.setRatingsList(ratingsList);
+            }
+
+            if(ratingsList!=null){
+
+
+                ratingsList.stream().forEach(ratings -> {
+
+                    // Api call for getting Hotel, from rating.
+
+                    var hotelResponse = this.restTemplate.exchange(
+                            Keys.HOTEL_URL,
+                            HttpMethod.GET,
+                            null,
+                            new ParameterizedTypeReference<Hotel>() {},
+                            ratings.getHotelId()
+                    );
+
+                    if(hotelResponse.getBody()!=null)
+                        ratings.setHotel(hotelResponse.getBody());
+
+                });
+            }
+        });
+
+        return userList;
     }
 
     @CacheEvict(value = {"allUsers"},allEntries = true)
