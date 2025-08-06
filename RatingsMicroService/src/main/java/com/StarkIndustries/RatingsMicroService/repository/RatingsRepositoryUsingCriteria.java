@@ -39,7 +39,7 @@ public class RatingsRepositoryUsingCriteria {
 
         Query query = new Query();
 
-        Criteria criteria = Criteria.where("hotelId").exists(true).and("hotelId").is(hotelId);
+        Criteria criteria = Criteria.where("hotelId").is(hotelId);
 
         query.addCriteria(criteria);
 
