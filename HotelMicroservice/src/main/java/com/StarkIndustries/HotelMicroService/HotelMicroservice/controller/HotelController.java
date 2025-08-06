@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/hotel")
 public class HotelController {
 
     @Autowired
@@ -30,7 +29,7 @@ public class HotelController {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to add Hotel!!");
     }
 
-    @GetMapping("/get-hotel/{hotelId}")
+    @GetMapping("/hotels/{hotelId}")
     public ResponseEntity<?> getUser(@PathVariable("hotelId") String hotelId){
 
         Hotel hotel = this.hotelService.getHotelById(hotelId);
@@ -40,7 +39,7 @@ public class HotelController {
 
     }
 
-    @GetMapping("/get-hotels")
+    @GetMapping("/hotels")
     public ResponseEntity<?> getAllHotels(){
         List<Hotel> hotelList = this.hotelService.getAllHotels();
         if(!hotelList.isEmpty())

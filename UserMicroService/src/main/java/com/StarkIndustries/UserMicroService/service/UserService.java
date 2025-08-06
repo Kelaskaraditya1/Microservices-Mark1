@@ -1,5 +1,7 @@
 package com.StarkIndustries.UserMicroService.service;
 
+import com.StarkIndustries.UserMicroService.feign.service.HotelFeignService;
+import com.StarkIndustries.UserMicroService.feign.service.RatingFeignService;
 import com.StarkIndustries.UserMicroService.keys.Keys;
 import com.StarkIndustries.UserMicroService.model.Hotel;
 import com.StarkIndustries.UserMicroService.model.Ratings;
@@ -31,10 +33,10 @@ public class UserService {
     public RestTemplate restTemplate;
 
     @Autowired
-    public HotelFeignClient hotelFeignClient;
+    public HotelFeignService hotelFeignService;
 
     @Autowired
-    public RatingsFeignClient ratingsFeignClient;
+    public RatingFeignService ratingFeignService;
 
     @CachePut(key = "#user.userId",value = "user")
     @CacheEvict(value = "allUsers",allEntries = true)
@@ -60,50 +62,51 @@ public class UserService {
 
             // Using RestTemplate: Api-Call
 
-            ResponseEntity<List<Ratings>> ratingsListResponse = this.restTemplate
-                    .exchange(
-                            Keys.USER_RATINGS_URL,
-                            HttpMethod.GET,
-                            null,
-                            new ParameterizedTypeReference<List<Ratings>>() {},
-                            userId
-                    );
-
-            if(ratingsListResponse.getBody()!=null && !ratingsListResponse.getBody().isEmpty())
-                    ratingsList=ratingsListResponse.getBody();
-
-            ratingsList.stream()
-                            .forEach(ratings -> {
-
-                                String hotelId = ratings.getHotelId();
-
-                                ResponseEntity<Hotel> hotelResponseEntity = this.restTemplate.exchange(
-                                        Keys.HOTEL_URL,
-                                        HttpMethod.GET,
-                                        null,
-                                        new ParameterizedTypeReference<Hotel>() {}
-                                        ,hotelId
-                                );
-
-                                if(hotelResponseEntity.getBody()!=null)
-                                        ratings.setHotel(hotelResponseEntity.getBody());
-                            });
+//            ResponseEntity<List<Ratings>> ratingsListResponse = this.restTemplate
+//                    .exchange(
+//                            Keys.USER_RATINGS_URL,
+//                            HttpMethod.GET,
+//                            null,
+//                            new ParameterizedTypeReference<List<Ratings>>() {},
+//                            userId
+//                    );
+//
+//            if(ratingsListResponse.getBody()!=null && !ratingsListResponse.getBody().isEmpty())
+//                    ratingsList=ratingsListResponse.getBody();
+//
+//            ratingsList.stream()
+//                            .forEach(ratings -> {
+//
+//                                String hotelId = ratings.getHotelId();
+//
+//                                ResponseEntity<Hotel> hotelResponseEntity = this.restTemplate.exchange(
+//                                        Keys.HOTEL_URL,
+//                                        HttpMethod.GET,
+//                                        null,
+//                                        new ParameterizedTypeReference<Hotel>() {}
+//                                        ,hotelId
+//                                );
+//
+//                                if(hotelResponseEntity.getBody()!=null)
+//                                        ratings.setHotel(hotelResponseEntity.getBody());
+//                            });
 
 
 
             // Using Feign client
 
-//            ratingsList = this.ratingsFeignClient.getRatings(userId);
-//
-//            for(Ratings rating:ratingsList){
-//
-//                Hotel hotel = this.hotelFeignClient.getHotelById(rating.getHotelId());
-//                rating.setHotel(hotel);
-//            }
+            ratingsList = this.ratingFeignService.getRatings(userId);
+
+            ratingsList.stream().forEach(ratings -> {
+
+                var hotelResponse = this.hotelFeignService.getHotel(ratings.getHotelId());
+                if(hotelResponse!=null)
+                    ratings.setHotel(hotelResponse);
+
+                    }
+            );
 
             user.setRatingsList(ratingsList);
-
-
 
             return user;
         }
