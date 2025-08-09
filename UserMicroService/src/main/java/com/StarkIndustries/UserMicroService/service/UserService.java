@@ -7,6 +7,7 @@ import com.StarkIndustries.UserMicroService.model.Hotel;
 import com.StarkIndustries.UserMicroService.model.Ratings;
 import com.StarkIndustries.UserMicroService.model.User;
 import com.StarkIndustries.UserMicroService.repository.UserRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -21,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -120,45 +122,75 @@ public class UserService {
 
         List<User> userList = this.userRepository.findAll();
 
+        // Using Rest Template-Api call.
+
+//        userList.stream().forEach(user->{
+//
+//            // Api call for getting list of ratings, given by the user
+//
+//            var ratingsResponse = this.restTemplate.exchange(
+//                    Keys.USER_RATINGS_URL,
+//                    HttpMethod.GET,
+//                    null,
+//                    new ParameterizedTypeReference<List<Ratings>>() {}
+//                    ,user.getUserId()
+//            );
+//
+//            List<Ratings> ratingsList=null;
+//
+//            if(ratingsResponse.getBody()!=null){
+//                ratingsList = new ArrayList<>(ratingsResponse.getBody());
+//                user.setRatingsList(ratingsList);
+//            }
+//
+//            if(ratingsList!=null){
+//
+//
+//                ratingsList.stream().forEach(ratings -> {
+//
+//                    // Api call for getting Hotel, from rating.
+//
+//                    var hotelResponse = this.restTemplate.exchange(
+//                            Keys.HOTEL_URL,
+//                            HttpMethod.GET,
+//                            null,
+//                            new ParameterizedTypeReference<Hotel>() {},
+//                            ratings.getHotelId()
+//                    );
+//
+//                    if(hotelResponse.getBody()!=null)
+//                        ratings.setHotel(hotelResponse.getBody());
+//
+//                });
+//            }
+//        });
+
+        // Using Feign client api call.
+
         userList.stream().forEach(user->{
 
-            // Api call for getting list of ratings, given by the user
+            List<Ratings> ratingsList;
 
-            var ratingsResponse = this.restTemplate.exchange(
-                    Keys.USER_RATINGS_URL,
-                    HttpMethod.GET,
-                    null,
-                    new ParameterizedTypeReference<List<Ratings>>() {}
-                    ,user.getUserId()
-            );
+            var ratingResponse =this.ratingFeignService.getRatings(user.getUserId());
 
-            List<Ratings> ratingsList=null;
+            if(!ratingResponse.isEmpty()){
+            ratingsList=ratingResponse;
 
-            if(ratingsResponse.getBody()!=null){
-                ratingsList = new ArrayList<>(ratingsResponse.getBody());
-                user.setRatingsList(ratingsList);
+            user.setRatingsList(ratingsList);
+
+            ratingsList.stream().map(ratings -> {
+
+                var hotelResponse = this.hotelFeignService.getHotel(ratings.getHotelId());
+
+                if(hotelResponse!=null)
+                    ratings.setHotel(hotelResponse);
+
+                return ratings;
+            })
+                    .toList();
+
             }
 
-            if(ratingsList!=null){
-
-
-                ratingsList.stream().forEach(ratings -> {
-
-                    // Api call for getting Hotel, from rating.
-
-                    var hotelResponse = this.restTemplate.exchange(
-                            Keys.HOTEL_URL,
-                            HttpMethod.GET,
-                            null,
-                            new ParameterizedTypeReference<Hotel>() {},
-                            ratings.getHotelId()
-                    );
-
-                    if(hotelResponse.getBody()!=null)
-                        ratings.setHotel(hotelResponse.getBody());
-
-                });
-            }
         });
 
         return userList;

@@ -1,14 +1,23 @@
 package com.StarkIndustries.UserMicroService.controller;
 
+import com.StarkIndustries.UserMicroService.keys.Keys;
 import com.StarkIndustries.UserMicroService.model.User;
 import com.StarkIndustries.UserMicroService.service.UserService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -31,11 +40,27 @@ public class UserController {
     }
 
     @GetMapping("/get-users")
+    @CircuitBreaker(name = "ratingHotelBreaker",fallbackMethod = "hotelAndRatingFallback")
     public ResponseEntity<?> getUsers(){
         List<User> userList = this.userService.getUsers();
         if(userList.isEmpty())
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Enter users first!!");
         return ResponseEntity.status(HttpStatus.OK).body(userList);
+    }
+
+    public ResponseEntity<?> hotelAndRatingFallback(Exception exception){
+
+        Map<String, Object> response = new HashMap<>();
+
+        log.info("Message:Service down!!,{}",exception.getLocalizedMessage());
+        exception.printStackTrace();
+
+        response.put(Keys.TIME_STAMP, Instant.now());
+        response.put(Keys.STATUS,HttpStatus.INTERNAL_SERVER_ERROR.value());
+        response.put(Keys.MESSAGE,"Service down!!");
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+
     }
 
     @GetMapping("/get-user-by-id/{userId}")
