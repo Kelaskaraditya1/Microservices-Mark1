@@ -4,6 +4,7 @@ import com.StarkIndustries.UserMicroService.keys.Keys;
 import com.StarkIndustries.UserMicroService.model.User;
 import com.StarkIndustries.UserMicroService.service.UserService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,8 @@ public class UserController {
     }
 
     @GetMapping("/get-users")
-    @CircuitBreaker(name = "ratingHotelBreaker",fallbackMethod = "hotelAndRatingFallback")
+    @CircuitBreaker(name = "ratingHotelBreaker",fallbackMethod = "hotelAndRatingBreakerFallback")
+    @Retry(name = "ratingHotelRetry",fallbackMethod = "")
     public ResponseEntity<?> getUsers(){
         List<User> userList = this.userService.getUsers();
         if(userList.isEmpty())
@@ -48,7 +50,19 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(userList);
     }
 
-    public ResponseEntity<?> hotelAndRatingFallback(Exception exception){
+    @GetMapping("/get-user-by-id/{userId}")
+    @CircuitBreaker(name = "ratingHotelBreaker",fallbackMethod = "hotelAndRatingFallback")
+    @Retry(name = "ratingHotelRetry",fallbackMethod = "")
+    public ResponseEntity<?> getUserById(@PathVariable("userId") String userId){
+
+        User user = this.userService.getUser(userId);
+        if(user!=null)
+            return ResponseEntity.status(HttpStatus.OK).body(user);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found!!");
+
+    }
+
+    public ResponseEntity<?> hotelAndRatingBreakerFallback(Exception exception){
 
         Map<String, Object> response = new HashMap<>();
 
@@ -63,15 +77,6 @@ public class UserController {
 
     }
 
-    @GetMapping("/get-user-by-id/{userId}")
-    public ResponseEntity<?> getUserById(@PathVariable("userId") String userId){
-
-        User user = this.userService.getUser(userId);
-        if(user!=null)
-            return ResponseEntity.status(HttpStatus.OK).body(user);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found!!");
-
-    }
 
     @PutMapping("/update-user/{userId}")
     public ResponseEntity<?> updateUser(@PathVariable("userId") String userId,@RequestBody User user){
